@@ -5,7 +5,7 @@ import random
 
 app = Flask(__name__)
 
-# ===== CONFIGURATION À MODIFIER =====
+# ===== CONFIGURATION (VOS VRAIES DONNÉES) =====
 TELEGRAM_BOT_TOKEN = "8866964539:AAHUOW6TftO2b7aXZ0bA2zLvQwrsumDnayA"
 WHATSAPP_SUPPORT_EMAIL = "support@support.whatsapp.com"
 AUTHORIZED_USERS = ["6815008409"]
@@ -36,29 +36,40 @@ def debug():
 def telegram_webhook():
     data = request.get_json()
     print(f"Received data: {data}")  # Pour le débogage
-    
+
     if 'message' in data and 'text' in data['message']:
         chat_id = data['message']['chat']['id']
         user_id = str(data['message']['from']['id'])
         text = data['message']['text']
-        
+
         if user_id not in AUTHORIZED_USERS:
-            send_telegram_message(chat_id, "Vous n'êtes pas autorisé à utiliser ce bot.")
+            send_telegram_message(chat_id, "❌ Vous n'êtes pas autorisé à utiliser ce bot.")
             return jsonify({"status": "unauthorized"})
-        
+
         if text.startswith('/report'):
             try:
-                phone_number = text.split('/report ')[1].strip()
-                report_status = send_whatsapp_report(phone_number)
-                
+                # Sépare la commande "/report" du reste
+                parts = text.split(' ', 1)
+                if len(parts) < 2:
+                    send_telegram_message(chat_id, "📌 Usage : /report <numéro> [message]\nEx: /report +235 90 12 34 56 menace")
+                    return jsonify({"status": "error"})
+
+                rest = parts[1].strip()
+                # Récupère le numéro (premier mot) et le message éventuel (le reste)
+                args = rest.split(' ', 1)
+                phone_number = args[0]
+                custom_message = args[1] if len(args) > 1 else ""
+
+                report_status = send_whatsapp_report(phone_number, custom_message)
+
                 if report_status:
-                    send_telegram_message(chat_id, f"Rapport envoyé avec succès pour le numéro {phone_number}")
+                    send_telegram_message(chat_id, f"✅ Rapport envoyé avec succès pour {phone_number}")
                 else:
-                    send_telegram_message(chat_id, "Échec de l'envoi du rapport. Veuillez réessayer.")
-                    
+                    send_telegram_message(chat_id, "❌ Échec de l'envoi du rapport. Veuillez réessayer.")
+
             except Exception as e:
-                send_telegram_message(chat_id, f"Erreur: {str(e)}")
-    
+                send_telegram_message(chat_id, f"⚠️ Erreur: {str(e)}")
+
     return jsonify({"status": "success"})
 
 def send_telegram_message(chat_id, text):
@@ -67,49 +78,62 @@ def send_telegram_message(chat_id, text):
         "chat_id": chat_id,
         "text": text
     }
-    response = requests.post(url, json=payload)
-    return response.status_code == 200
-
-def send_whatsapp_report(phone_number):
-    subject = f"Signalement d'utilisateur abusif - {phone_number}"
-    body = f"""
-    Signalement d'utilisateur WhatsApp abusif:
-    
-    Numéro: {phone_number}
-    Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-    
-    Cet utilisateur a été signalé pour comportement inapproprié.
-    Veuillez prendre les mesures nécessaires.
-    """
-    
     try:
-        import mailjet_rest
-        
-        # Choisir une adresse d'envoi au hasard
+        response = requests.post(url, json=payload)
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Erreur Telegram: {e}")
+        return False
+
+def send_whatsapp_report(phone_number, custom_message=""):
+    # Sujet de l'email
+    subject = f"Signalement d'utilisateur abusif - {phone_number}"
+
+    # Corps de l'email avec ou sans message personnalisé
+    if custom_message:
+        body = f"""Signalement WhatsApp
+Numéro : {phone_number}
+Date : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+Message de l'utilisateur :
+{custom_message}
+"""
+    else:
+        body = f"""Signalement WhatsApp
+Numéro : {phone_number}
+Date : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+Cet utilisateur a été signalé pour comportement inapproprié.
+Veuillez prendre les mesures nécessaires.
+"""
+
+    try:
+        # Import ici pour ne pas dépendre du module s'il n'est pas utilisé
+        from mailjet_rest import Client
+
         sender_email = random.choice(SENDER_EMAILS)
-        
-        mailjet = mailjet_rest.Client(auth=(MAILJET_API_KEY, MAILJET_API_SECRET), version='v3.1')
+        mailjet = Client(auth=(MAILJET_API_KEY, MAILJET_API_SECRET), version='v3.1')
+
         data = {
-          'Messages': [
-            {
-              "From": {
-                "Email": sender_email,
-                "Name": "WhatsApp Reporter"
-              },
-              "To": [
+            'Messages': [
                 {
-                  "Email": WHATSAPP_SUPPORT_EMAIL,
-                  "Name": "WhatsApp Support"
+                    "From": {
+                        "Email": sender_email,
+                        "Name": "WhatsApp Reporter"
+                    },
+                    "To": [
+                        {
+                            "Email": WHATSAPP_SUPPORT_EMAIL,
+                            "Name": "WhatsApp Support"
+                        }
+                    ],
+                    "Subject": subject,
+                    "TextPart": body
                 }
-              ],
-              "Subject": subject,
-              "TextPart": body
-            }
-          ]
+            ]
         }
         result = mailjet.send.create(data=data)
         return result.status_code == 200
-        
     except Exception as e:
         print(f"Erreur lors de l'envoi de l'e-mail: {str(e)}")
         return False
