@@ -6,26 +6,17 @@ import random
 app = Flask(__name__)
 
 # ===== CONFIGURATION À MODIFIER =====
-TELEGRAM_BOT_TOKEN = "VOTRE_TOKEN_BOT_TELEGRAM_ICI"
-WHATSAPP_SUPPORT_EMAIL = "support@whatsapp.com"
-AUTHORIZED_USERS = ["ID_UTILISATEUR_1", "ID_UTILISATEUR_2"]
+TELEGRAM_BOT_TOKEN = "8866964539:AAHUOW6TftO2b7aXZ0bA2zLvQwrsumDnayA"
+WHATSAPP_SUPPORT_EMAIL = "support@support.whatsapp.com"
+AUTHORIZED_USERS = ["6815008409"]
 
 # Configuration Mailjet
-MAILJET_API_KEY = "VOTRE_CLE_API_MAILJET"
-MAILJET_API_SECRET = "VOTRE_CLE_SECRETE_MAILJET"
+MAILJET_API_KEY = "6105b43496004e5005c139b06df09d7a"
+MAILJET_API_SECRET = "3756444a0085038f94eb969bec70f5b1"
 
 # Adresses e-mail d'envoi (doivent être vérifiées dans votre compte Mailjet)
 SENDER_EMAILS = [
-    "email1@exemple.com",
-    "email2@exemple.com",
-    "email3@exemple.com",
-    "email4@exemple.com",
-    "email5@exemple.com",
-    "email6@exemple.com",
-    "email7@exemple.com",
-    "email8@exemple.com",
-    "email9@exemple.com",
-    "email10@exemple.com"
+    "azountou@gmail.com"
 ]
 # ===== FIN DE LA CONFIGURATION =====
 
