@@ -1,16 +1,32 @@
 from flask import Flask, request, jsonify
 import requests
 from datetime import datetime
+import random
 
 app = Flask(__name__)
 
 # ===== CONFIGURATION À MODIFIER =====
-# Remplacez ces valeurs par vos informations réelles
 TELEGRAM_BOT_TOKEN = "VOTRE_TOKEN_BOT_TELEGRAM_ICI"
-WHATSAPP_SUPPORT_EMAIL = "support@whatsapp.com"  # Adresse e-mail du support WhatsApp
-AUTHORIZED_USERS = ["ID_UTILISATEUR_1", "ID_UTILISATEUR_2"]  # IDs Telegram autorisés (séparés par des virgules)
-SENDER_EMAIL = "votre_email@exemple.com"  # Votre e-mail d'envoi
-SENDGRID_API_KEY = "VOTRE_CLE_API_SENDGRID_ICI"  # Clé API SendGrid
+WHATSAPP_SUPPORT_EMAIL = "support@whatsapp.com"
+AUTHORIZED_USERS = ["ID_UTILISATEUR_1", "ID_UTILISATEUR_2"]
+
+# Configuration Mailjet
+MAILJET_API_KEY = "VOTRE_CLE_API_MAILJET"
+MAILJET_API_SECRET = "VOTRE_CLE_SECRETE_MAILJET"
+
+# Adresses e-mail d'envoi (doivent être vérifiées dans votre compte Mailjet)
+SENDER_EMAILS = [
+    "email1@exemple.com",
+    "email2@exemple.com",
+    "email3@exemple.com",
+    "email4@exemple.com",
+    "email5@exemple.com",
+    "email6@exemple.com",
+    "email7@exemple.com",
+    "email8@exemple.com",
+    "email9@exemple.com",
+    "email10@exemple.com"
+]
 # ===== FIN DE LA CONFIGURATION =====
 
 @app.route('/')
@@ -21,24 +37,18 @@ def home():
 def telegram_webhook():
     data = request.get_json()
     
-    # Vérifier si c'est une commande /report
     if 'message' in data and 'text' in data['message']:
         chat_id = data['message']['chat']['id']
         user_id = str(data['message']['from']['id'])
         text = data['message']['text']
         
-        # Vérifier si l'utilisateur est autorisé
         if user_id not in AUTHORIZED_USERS:
             send_telegram_message(chat_id, "Vous n'êtes pas autorisé à utiliser ce bot.")
             return jsonify({"status": "unauthorized"})
         
-        # Traiter la commande /report
         if text.startswith('/report'):
             try:
-                # Extraire le numéro de téléphone
                 phone_number = text.split('/report ')[1].strip()
-                
-                # Envoyer le rapport à WhatsApp
                 report_status = send_whatsapp_report(phone_number)
                 
                 if report_status:
@@ -61,7 +71,6 @@ def send_telegram_message(chat_id, text):
     return response.status_code == 200
 
 def send_whatsapp_report(phone_number):
-    # Préparer le contenu de l'e-mail
     subject = f"Signalement d'utilisateur abusif - {phone_number}"
     body = f"""
     Signalement d'utilisateur WhatsApp abusif:
@@ -73,21 +82,33 @@ def send_whatsapp_report(phone_number):
     Veuillez prendre les mesures nécessaires.
     """
     
-    # Configuration du service d'envoi d'e-mails avec SendGrid
     try:
-        from sendgrid import SendGridAPIClient
-        from sendgrid.helpers.mail import Mail
+        import mailjet_rest
         
-        message = Mail(
-            from_email=SENDER_EMAIL,
-            to_emails=WHATSAPP_SUPPORT_EMAIL,
-            subject=subject,
-            html_content=body
-        )
+        # Choisir une adresse d'envoi au hasard
+        sender_email = random.choice(SENDER_EMAILS)
         
-        sg = SendGridAPIClient(SENDGRID_API_KEY)
-        response = sg.send(message)
-        return response.status_code == 202
+        mailjet = mailjet_rest.Client(auth=(MAILJET_API_KEY, MAILJET_API_SECRET), version='v3.1')
+        data = {
+          'Messages': [
+            {
+              "From": {
+                "Email": sender_email,
+                "Name": "WhatsApp Reporter"
+              },
+              "To": [
+                {
+                  "Email": WHATSAPP_SUPPORT_EMAIL,
+                  "Name": "WhatsApp Support"
+                }
+              ],
+              "Subject": subject,
+              "TextPart": body
+            }
+          ]
+        }
+        result = mailjet.send.create(data=data)
+        return result.status_code == 200
         
     except Exception as e:
         print(f"Erreur lors de l'envoi de l'e-mail: {str(e)}")
