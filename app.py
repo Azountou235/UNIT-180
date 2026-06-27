@@ -24,9 +24,18 @@ SENDER_EMAILS = [
 def home():
     return "WhatsApp Reporting Service is running!"
 
+@app.route('/debug')
+def debug():
+    return jsonify({
+        "webhook_url": "https://unit-180.vercel.app/telegram-webhook",
+        "telegram_token_configured": bool(TELEGRAM_BOT_TOKEN),
+        "authorized_users": AUTHORIZED_USERS
+    })
+
 @app.route('/telegram-webhook', methods=['POST'])
 def telegram_webhook():
     data = request.get_json()
+    print(f"Received data: {data}")  # Pour le débogage
     
     if 'message' in data and 'text' in data['message']:
         chat_id = data['message']['chat']['id']
