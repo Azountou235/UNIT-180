@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 # ===== CONFIGURATION (VOS VRAIES DONNÉES) =====
 TELEGRAM_BOT_TOKEN = "8866964539:AAHUOW6TftO2b7aXZ0bA2zLvQwrsumDnayA"
-WHATSAPP_SUPPORT_EMAIL = "azountou@gmail.com"  # ← Changé pour ton adresse de test
+WHATSAPP_SUPPORT_EMAIL = "leseigneur235@gmail.com"  # ← Changé pour ton adresse de test
 AUTHORIZED_USERS = ["6815008409"]
 
 MAILJET_API_KEY = "6105b43496004e5005c139b06df09d7a"
