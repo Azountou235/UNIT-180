@@ -14,7 +14,7 @@ AUTHORIZED_USERS = ["6815008409"]
 
 # Gmail
 GMAIL_USER = "azountouleseigneur@gmail.com"
-GMAIL_PASSWORD = "un t b j j g y i y o h p k u x f"  # ← Sans les espaces
+GMAIL_PASSWORD = "untbjjgyiyohpkuxf"  # ← Sans les espaces
 # ===== FIN CONFIGURATION =====
 
 @app.route('/')
