@@ -28,8 +28,8 @@ def home():
 def debug():
     return jsonify({
         "webhook_url": "https://unit-180.vercel.app/telegram-webhook",
-        "telegram_token_configured": bool(TELEGRAM_BOT_TOKEN),
-        "authorized_users": AUTHORIZED_USERS
+        "telegram_token_configured": bool(8866964539:AAHUOW6TftO2b7aXZ0bA2zLvQwrsumDnayA),
+        "authorized_users": 6815008409
     })
 
 @app.route('/telegram-webhook', methods=['POST'])
