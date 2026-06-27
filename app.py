@@ -1,14 +1,17 @@
 from flask import Flask, request, jsonify
 import requests
-import os
 from datetime import datetime
 
 app = Flask(__name__)
 
-# Configuration depuis les variables d'environnement
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-WHATSAPP_SUPPORT_EMAIL = os.environ.get("WHATSAPP_SUPPORT_EMAIL")
-AUTHORIZED_USERS = os.environ.get("AUTHORIZED_USERS", "").split(",")
+# ===== CONFIGURATION À MODIFIER =====
+# Remplacez ces valeurs par vos informations réelles
+TELEGRAM_BOT_TOKEN = "VOTRE_TOKEN_BOT_TELEGRAM_ICI"
+WHATSAPP_SUPPORT_EMAIL = "support@whatsapp.com"  # Adresse e-mail du support WhatsApp
+AUTHORIZED_USERS = ["ID_UTILISATEUR_1", "ID_UTILISATEUR_2"]  # IDs Telegram autorisés (séparés par des virgules)
+SENDER_EMAIL = "votre_email@exemple.com"  # Votre e-mail d'envoi
+SENDGRID_API_KEY = "VOTRE_CLE_API_SENDGRID_ICI"  # Clé API SendGrid
+# ===== FIN DE LA CONFIGURATION =====
 
 @app.route('/')
 def home():
@@ -70,20 +73,19 @@ def send_whatsapp_report(phone_number):
     Veuillez prendre les mesures nécessaires.
     """
     
-    # Configuration du service d'envoi d'e-mails (vous devrez utiliser un service comme SendGrid, Mailgun, etc.)
-    # C'est un exemple avec SendGrid
+    # Configuration du service d'envoi d'e-mails avec SendGrid
     try:
         from sendgrid import SendGridAPIClient
         from sendgrid.helpers.mail import Mail
         
         message = Mail(
-            from_email=os.environ.get("SENDER_EMAIL"),
+            from_email=SENDER_EMAIL,
             to_emails=WHATSAPP_SUPPORT_EMAIL,
             subject=subject,
             html_content=body
         )
         
-        sg = SendGridAPIClient(os.environ.get("SENDGRID_API_KEY"))
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
         response = sg.send(message)
         return response.status_code == 202
         
