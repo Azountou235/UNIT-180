@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 # ===== CONFIGURATION (VOS VRAIES DONNÉES) =====
 TELEGRAM_BOT_TOKEN = "8866964539:AAHUOW6TftO2b7aXZ0bA2zLvQwrsumDnayA"
-WHATSAPP_SUPPORT_EMAIL = "support@support.whatsapp.com"
+WHATSAPP_SUPPORT_EMAIL = "azountouleseigneur@gmail.com"
 AUTHORIZED_USERS = ["6815008409"]
 
 # Configuration Mailjet
