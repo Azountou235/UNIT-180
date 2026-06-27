@@ -59,16 +59,6 @@ def telegram_webhook():
 
     return jsonify({"status": "success"})
 
-def send_telegram_message(chat_id, text):
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": chat_id, "text": text}
-    try:
-        response = requests.post(url, json=payload)
-        if response.status_code != 200:
-            print(f"Telegram API error: {response.text}")
-    except Exception as e:
-        print(f"Erreur Telegram: {e}")
-
 def send_whatsapp_report(report_text):
     subject = f"Signalement WhatsApp - {datetime.now().strftime('%d/%m/%Y %H:%M')}"
     body = f"""NOUVEAU SIGNALEMENT WHATSAPP
@@ -82,8 +72,15 @@ MESSAGE REÇU :
 
     try:
         from mailjet_rest import Client
+        
+        print(f"🔍 Tentative d'envoi via Mailjet...")
+        print(f"📧 Expéditeur : {SENDER_EMAILS[0]}")
+        print(f"📥 Destinataire : {WHATSAPP_SUPPORT_EMAIL}")
+        print(f"🔑 API Key : {MAILJET_API_KEY[:10]}...")
+        
         sender_email = random.choice(SENDER_EMAILS)
         mailjet = Client(auth=(MAILJET_API_KEY, MAILJET_API_SECRET), version='v3.1')
+        
         data = {
             'Messages': [{
                 "From": {"Email": sender_email, "Name": "WhatsApp Reporter"},
@@ -92,15 +89,30 @@ MESSAGE REÇU :
                 "TextPart": body
             }]
         }
+        
+        print(f"📤 Envoi de la requête...")
         result = mailjet.send.create(data=data)
+        print(f"📊 Status code: {result.status_code}")
+        print(f"📋 Réponse complète: {result.json()}")
         
         if result.status_code == 200:
-            return f"✅ Rapport envoyé avec succès à {WHATSAPP_SUPPORT_EMAIL}"
+            # Vérifier si l'email a vraiment été accepté
+            response_data = result.json()
+            messages = response_data.get('Messages', [])
+            if messages:
+                for msg in messages:
+                    if msg.get('Status') == 'success':
+                        return f"✅ Rapport bien envoyé à {WHATSAPP_SUPPORT_EMAIL}\n📧 Vérifiez vos spams"
+                    else:
+                        error = msg.get('Errors', [])
+                        return f"❌ Erreur Mailjet: {error}"
+            return f"✅ Rapport envoyé (statut 200) à {WHATSAPP_SUPPORT_EMAIL}"
         else:
             error_detail = result.json() if result.text else "Aucun détail"
             return f"❌ Échec Mailjet ({result.status_code}): {error_detail}"
             
     except Exception as e:
-        return f"❌ Erreur: {str(e)}"
+        print(f"💥 Exception: {str(e)}")
+        return f"❌ Erreur technique: {str(e)}"
 
 # Ne pas inclure app.run() pour Vercel
