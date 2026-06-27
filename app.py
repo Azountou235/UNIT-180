@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 # ===== CONFIGURATION (VOS VRAIES DONNÉES) =====
 TELEGRAM_BOT_TOKEN = "8866964539:AAHUOW6TftO2b7aXZ0bA2zLvQwrsumDnayA"
-WHATSAPP_SUPPORT_EMAIL = "leseigneur235@gmail.com"  # change ici pour tester avec ton adresse
+WHATSAPP_SUPPORT_EMAIL = "azountou@gmail.com"  # ← Changé pour ton adresse de test
 AUTHORIZED_USERS = ["6815008409"]
 
 MAILJET_API_KEY = "6105b43496004e5005c139b06df09d7a"
@@ -24,8 +24,10 @@ def home():
 def debug():
     return jsonify({
         "webhook_url": "https://unit-180.vercel.app/telegram-webhook",
-        "telegram_token_configured": bool(8866964539:AAHUOW6TftO2b7aXZ0bA2zLvQwrsumDnayA),
-        "authorized_users": 6815008409
+        "telegram_token_configured": bool(TELEGRAM_BOT_TOKEN),
+        "authorized_users": AUTHORIZED_USERS,
+        "destination_email": WHATSAPP_SUPPORT_EMAIL,
+        "sender_email": SENDER_EMAILS[0]
     })
 
 @app.route('/telegram-webhook', methods=['POST'])
@@ -46,14 +48,14 @@ def telegram_webhook():
             try:
                 parts = text.split(' ', 1)
                 if len(parts) < 2:
-                    send_telegram_message(chat_id, "📌 Usage : /report <texte du signalement>")
+                    send_telegram_message(chat_id, "📌 Usage : /report <texte du signalement>\nEx: /report Ce numéro m'envoie des menaces")
                     return jsonify({"status": "error"})
 
                 report_text = parts[1].strip()
-                send_whatsapp_report(report_text)
-                send_telegram_message(chat_id, "✅ Rapport envoyé avec succès.")
+                result_msg = send_whatsapp_report(report_text)
+                send_telegram_message(chat_id, result_msg)
             except Exception as e:
-                send_telegram_message(chat_id, f"⚠️ Échec : {str(e)}")
+                send_telegram_message(chat_id, f"⚠️ Erreur: {str(e)}")
 
     return jsonify({"status": "success"})
 
@@ -61,17 +63,21 @@ def send_telegram_message(chat_id, text):
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {"chat_id": chat_id, "text": text}
     try:
-        requests.post(url, json=payload)
+        response = requests.post(url, json=payload)
+        if response.status_code != 200:
+            print(f"Telegram API error: {response.text}")
     except Exception as e:
         print(f"Erreur Telegram: {e}")
 
 def send_whatsapp_report(report_text):
-    subject = "Signalement WhatsApp"
-    body = f"""Signalement WhatsApp
+    subject = f"Signalement WhatsApp - {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    body = f"""NOUVEAU SIGNALEMENT WHATSAPP
+==============================
 Date : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-Message :
+MESSAGE REÇU :
 {report_text}
+==============================
 """
 
     try:
@@ -81,17 +87,20 @@ Message :
         data = {
             'Messages': [{
                 "From": {"Email": sender_email, "Name": "WhatsApp Reporter"},
-                "To": [{"Email": WHATSAPP_SUPPORT_EMAIL, "Name": "WhatsApp Support"}],
+                "To": [{"Email": WHATSAPP_SUPPORT_EMAIL, "Name": "Support"}],
                 "Subject": subject,
                 "TextPart": body
             }]
         }
         result = mailjet.send.create(data=data)
-        if result.status_code != 200:
+        
+        if result.status_code == 200:
+            return f"✅ Rapport envoyé avec succès à {WHATSAPP_SUPPORT_EMAIL}"
+        else:
             error_detail = result.json() if result.text else "Aucun détail"
-            raise Exception(f"Mailjet error {result.status_code}: {error_detail}")
+            return f"❌ Échec Mailjet ({result.status_code}): {error_detail}"
+            
     except Exception as e:
-        raise Exception(f"Erreur Mailjet: {str(e)}")
+        return f"❌ Erreur: {str(e)}"
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# Ne pas inclure app.run() pour Vercel
